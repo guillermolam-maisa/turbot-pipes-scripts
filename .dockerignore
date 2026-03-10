@@ -1,0 +1,9 @@
+.git
+.home
+.config
+.tools
+.powerpipe
+powerpipe/results/*
+!powerpipe/results/.gitkeep
+vendor/bin/*.manifest
+turbot-pipes-scripts/.git

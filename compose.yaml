@@ -1,0 +1,62 @@
+name: powerpipe-benchmark
+
+services:
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: powerpipe-benchmark:local
+    init: true
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /workspace
+    environment:
+      HOME: /home/powerpipe
+      PORT: "${PORT:-9033}"
+      SEARCH_PATH: "${SEARCH_PATH:-admin_only}"
+      MAX_PARALLEL: "${MAX_PARALLEL:-1}"
+      QUERY_TIMEOUT: "${QUERY_TIMEOUT:-90}"
+      BENCHMARK_TIMEOUT: "${BENCHMARK_TIMEOUT:-2700}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - .:/workspace
+      - ${HOME_DIR}/.aws:/home/powerpipe/.aws:ro
+      - ${HOME_DIR}/.steampipe:/home/powerpipe/.steampipe
+    command:
+      - bash
+      - /usr/local/bin/compose-runner.sh
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: powerpipe-benchmark:local
+    init: true
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /workspace
+    environment:
+      HOME: /home/powerpipe
+      PORT: "${PORT:-9033}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - .:/workspace
+      - ${HOME_DIR}/.aws:/home/powerpipe/.aws:ro
+      - ${HOME_DIR}/.steampipe:/home/powerpipe/.steampipe
+    ports:
+      - "${PORT:-9033}:${PORT:-9033}"
+    command:
+      - powerpipe
+      - server
+      - --port
+      - "${PORT:-9033}"
