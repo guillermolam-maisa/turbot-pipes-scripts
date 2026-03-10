@@ -1,0 +1,117 @@
+version: "3"
+
+vars:
+  MAX_PARALLEL: '{{default "1" .MAX_PARALLEL}}'
+  QUERY_TIMEOUT: '{{default "90" .QUERY_TIMEOUT}}'
+  BENCHMARK_TIMEOUT: '{{default "2700" .BENCHMARK_TIMEOUT}}'
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  validate:
+    desc: Validate scripts and local compose/task wiring.
+    cmds:
+      - bash ./scripts/validate-workspace.sh
+
+  vendor:binaries:
+    desc: Copy the local Steampipe and Powerpipe binaries into ./vendor/bin for container builds.
+    cmds:
+      - bash ./scripts/vendor-local-binaries.sh
+
+  bootstrap:mods:
+    desc: Install the Powerpipe mods required by the benchmark runner.
+    dir: ./powerpipe
+    cmds:
+      - powerpipe mod install
+
+  benchmark:smoke:
+    desc: Run the narrow admin_only smoke benchmark with the safe wrapper.
+    deps:
+      - bootstrap:mods
+    env:
+      SEARCH_PATH: admin_only
+      BENCHMARK: aws_compliance.benchmark.all_controls_account
+      MAX_PARALLEL: "{{.MAX_PARALLEL}}"
+      QUERY_TIMEOUT: "{{.QUERY_TIMEOUT}}"
+      BENCHMARK_TIMEOUT: "{{.BENCHMARK_TIMEOUT}}"
+    cmds:
+      - bash ./powerpipe/run-all-controls-safe.sh
+
+  benchmark:admin:
+    desc: Run the full admin_only benchmark with the safe wrapper.
+    deps:
+      - bootstrap:mods
+    env:
+      SEARCH_PATH: admin_only
+      MAX_PARALLEL: "{{.MAX_PARALLEL}}"
+      QUERY_TIMEOUT: "{{.QUERY_TIMEOUT}}"
+      BENCHMARK_TIMEOUT: "{{.BENCHMARK_TIMEOUT}}"
+    cmds:
+      - bash ./powerpipe/run-all-controls-safe.sh
+
+  benchmark:all:
+    desc: Run the full all-connections benchmark with the safe wrapper.
+    deps:
+      - bootstrap:mods
+    env:
+      SEARCH_PATH: all
+      MAX_PARALLEL: "{{.MAX_PARALLEL}}"
+      QUERY_TIMEOUT: "{{.QUERY_TIMEOUT}}"
+      BENCHMARK_TIMEOUT: "{{.BENCHMARK_TIMEOUT}}"
+    cmds:
+      - bash ./powerpipe/run-all-controls-safe.sh
+
+  compose:config:
+    desc: Validate the Docker Compose configuration when Docker is installed.
+    deps:
+      - vendor:binaries
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - docker compose config >/dev/null
+
+  compose:run:smoke:
+    desc: Run the narrow smoke benchmark in the containerized runner.
+    deps:
+      - vendor:binaries
+      - bootstrap:mods
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - docker compose run --rm -e SEARCH_PATH=admin_only -e BENCHMARK=aws_compliance.benchmark.all_controls_account runner
+
+  compose:run:admin:
+    desc: Run the full admin_only benchmark in the containerized runner.
+    deps:
+      - vendor:binaries
+      - bootstrap:mods
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - docker compose run --rm -e SEARCH_PATH=admin_only runner
+
+  compose:run:all:
+    desc: Run the full all-connections benchmark in the containerized runner.
+    deps:
+      - vendor:binaries
+      - bootstrap:mods
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - docker compose run --rm -e SEARCH_PATH=all runner
+
+  compose:dashboard:
+    desc: Start the dashboard container on port 9033.
+    deps:
+      - vendor:binaries
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - docker compose up dashboard

@@ -16,3 +16,9 @@ coverage/
 .tailpipe/
 .flowpipe/
 results/
+vendor/bin/steampipe
+vendor/bin/powerpipe
+vendor/bin/*.manifest
+powerpipe/results/*
+!powerpipe/results/.gitkeep
+powerpipe/.mod.cache.json
