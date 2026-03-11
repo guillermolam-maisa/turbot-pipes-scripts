@@ -5,10 +5,10 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
   return 1 2>/dev/null || exit 1
 fi
 
-WORKDIR="/workspace/powerpipe"
+WORKDIR="${WORKDIR:-/workspace/powerpipe}"
 HOME_DIR="${HOME:-/home/powerpipe}"
 
-mkdir -p "${WORKDIR}/results" /workspace/vendor/bin "${HOME_DIR}/.steampipe" /tmp
+mkdir -p "${WORKDIR}/results" "${WORKDIR}/vendor/bin" "${HOME_DIR}/.steampipe" /tmp
 
 if [[ ! -x /usr/local/bin/steampipe || ! -x /usr/local/bin/powerpipe ]]; then
   echo "ERROR: expected vendored steampipe and powerpipe binaries in the image." >&2

@@ -20,7 +20,7 @@ Add assets under the relevant service directory and document any repository-spec
 
 ## Benchmark Operations
 
-This repository now includes a production-oriented AWS compliance benchmark runner under [powerpipe/run-all-controls-safe.sh](/home/kali-user/turbot/powerpipe/turbot-pipes-scripts-work/powerpipe/run-all-controls-safe.sh). The runner is designed to be idempotent, safe to invoke with `bash`, and aligned with the local process-hygiene requirements used for Powerpipe and Steampipe.
+This repository now includes a production-oriented AWS compliance benchmark runner under [powerpipe/run-all-controls-safe.sh](/home/kali-user/turbot/powerpipe/run-all-controls-safe.sh). The runner is designed to be idempotent, safe to invoke with `bash`, and aligned with the local process-hygiene requirements used for Powerpipe and Steampipe.
 
 Primary entrypoints:
 

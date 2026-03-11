@@ -1,62 +1,186 @@
 name: powerpipe-benchmark
 
 services:
+  steampipe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: powerpipe-benchmark:local
+    init: true
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /workspace
+    environment:
+      HOME: /home/powerpipe
+      STEAMPIPE_INSTALL_DIR: /home/powerpipe/.steampipe
+      STEAMPIPE_DATABASE_PORT: "${STEAMPIPE_DATABASE_PORT:-9193}"
+      STEAMPIPE_DATABASE_PASSWORD: "${STEAMPIPE_DATABASE_PASSWORD:-steampipe}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    mem_limit: 4gb
+    cpus: 1.0
+    tmpfs:
+      - /tmp:mode=1777,size=128M
+      - /run:mode=1777,size=16M
+      - /home/powerpipe/.aws:mode=1777,uid=1000,gid=1000,size=1M
+      - /home/powerpipe/.steampipe/config:mode=1777,uid=1000,gid=1000,size=1M
+    volumes:
+      - ${HOST_HOME:?HOST_HOME must be set}/.aws:/host-aws:ro
+      - ${HOST_HOME:?HOST_HOME must be set}/.steampipe/config:/host-steampipe-config:ro
+      - steampipe_state:/home/powerpipe/.steampipe
+    command:
+      - bash
+      - /usr/local/bin/compose-steampipe.sh
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/${STEAMPIPE_DATABASE_PORT:-9193}'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  powerpipe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: powerpipe-benchmark:local
+    init: true
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /workspace
+    depends_on:
+      steampipe:
+        condition: service_healthy
+    environment:
+      HOME: /home/powerpipe
+      SOURCE_WORKDIR: /workspace-src/powerpipe
+      WORKDIR: /tmp/powerpipe-workspace
+      RESULTS_DIR: /workspace-results
+      PORT: "${PORT:-9033}"
+      POWERPIPE_HOST_PORT: "${POWERPIPE_HOST_PORT:-9033}"
+      POWERPIPE_LISTEN: network
+      POWERPIPE_WORKSPACE: compose
+      POWERPIPE_DATABASE_HOST: steampipe
+      STEAMPIPE_DATABASE_PORT: "${STEAMPIPE_DATABASE_PORT:-9193}"
+      STEAMPIPE_DATABASE_PASSWORD: "${STEAMPIPE_DATABASE_PASSWORD:-steampipe}"
+      SEARCH_PATH: "${SEARCH_PATH:-admin_only}"
+      MAX_PARALLEL: "${MAX_PARALLEL:-1}"
+      QUERY_TIMEOUT: "${QUERY_TIMEOUT:-90}"
+      BENCHMARK_TIMEOUT: "${BENCHMARK_TIMEOUT:-2700}"
+      POWERPIPE_MOD_PULL: latest
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    mem_limit: 4gb
+    cpus: 1.0
+    tmpfs:
+      - /tmp:mode=1777,size=256M
+      - /home/powerpipe/.aws:mode=1777,uid=1000,gid=1000,size=1M
+      - /home/powerpipe/.powerpipe/config:mode=1777,uid=1000,gid=1000,size=1M
+    volumes:
+      - ./powerpipe:/workspace-src/powerpipe:ro
+      - ./powerpipe/results:/workspace-results
+      - ${HOST_HOME:?HOST_HOME must be set}/.aws:/host-aws:ro
+      - powerpipe_state:/home/powerpipe/.powerpipe
+    ports:
+      - "${POWERPIPE_HOST_PORT:-9033}:${PORT:-9033}"
+    command:
+      - bash
+      - /usr/local/bin/compose-powerpipe.sh
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/${PORT:-9033}'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
   runner:
     build:
       context: .
       dockerfile: Dockerfile
     image: powerpipe-benchmark:local
     init: true
-    user: "${UID:-1000}:${GID:-1000}"
+    profiles: ["runner"]
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     working_dir: /workspace
+    depends_on:
+      steampipe:
+        condition: service_healthy
     environment:
       HOME: /home/powerpipe
+      SOURCE_WORKDIR: /workspace-src/powerpipe
+      WORKDIR: /tmp/powerpipe-workspace
+      RESULTS_DIR: /workspace-results
       PORT: "${PORT:-9033}"
+      POWERPIPE_HOST_PORT: "${POWERPIPE_HOST_PORT:-9033}"
+      POWERPIPE_WORKSPACE: compose
+      POWERPIPE_DATABASE_HOST: steampipe
+      POWERPIPE_DATABASE_URL: "postgres://steampipe:${STEAMPIPE_DATABASE_PASSWORD:-steampipe}@steampipe:${STEAMPIPE_DATABASE_PORT:-9193}/steampipe?sslmode=disable"
+      STEAMPIPE_DATABASE_PORT: "${STEAMPIPE_DATABASE_PORT:-9193}"
+      STEAMPIPE_DATABASE_PASSWORD: "${STEAMPIPE_DATABASE_PASSWORD:-steampipe}"
       SEARCH_PATH: "${SEARCH_PATH:-admin_only}"
+      BENCHMARK: "${BENCHMARK:-aws_compliance.benchmark.all_controls}"
       MAX_PARALLEL: "${MAX_PARALLEL:-1}"
       QUERY_TIMEOUT: "${QUERY_TIMEOUT:-90}"
       BENCHMARK_TIMEOUT: "${BENCHMARK_TIMEOUT:-2700}"
+      BENCHMARK_ACCEPT_FINDINGS: "${BENCHMARK_ACCEPT_FINDINGS:-false}"
+      POWERPIPE_MOD_PULL: latest
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     read_only: true
+    mem_limit: 4gb
+    cpus: 1.0
     tmpfs:
-      - /tmp
+      - /tmp:mode=1777,size=256M
+      - /home/powerpipe/.aws:mode=1777,uid=1000,gid=1000,size=1M
+      - /home/powerpipe/.powerpipe/config:mode=1777,uid=1000,gid=1000,size=1M
     volumes:
-      - .:/workspace
-      - ${HOME_DIR}/.aws:/home/powerpipe/.aws:ro
-      - ${HOME_DIR}/.steampipe:/home/powerpipe/.steampipe
+      - ./powerpipe:/workspace-src/powerpipe:ro
+      - ./powerpipe/results:/workspace-results
+      - ${HOST_HOME:?HOST_HOME must be set}/.aws:/host-aws:ro
+      - powerpipe_state:/home/powerpipe/.powerpipe
     command:
       - bash
-      - /usr/local/bin/compose-runner.sh
+      - /usr/local/bin/compose-benchmark-runner.sh
 
-  dashboard:
+  tailpipe:
     build:
       context: .
       dockerfile: Dockerfile
     image: powerpipe-benchmark:local
     init: true
-    user: "${UID:-1000}:${GID:-1000}"
+    profiles: ["tailpipe"]
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     working_dir: /workspace
     environment:
       HOME: /home/powerpipe
-      PORT: "${PORT:-9033}"
+      TAILPIPE_MODE: "${TAILPIPE_MODE:-idle}"
+      TAILPIPE_COLLECT_FROM: "${TAILPIPE_COLLECT_FROM:-7d}"
+      TAILPIPE_DISCOVERY_DIR: /workspace/powerpipe/results/discovery/latest
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     read_only: true
+    mem_limit: 4gb
+    cpus: 1.0
     tmpfs:
-      - /tmp
+      - /tmp:mode=1777,size=256M
+      - /home/powerpipe/.aws:mode=1777,uid=1000,gid=1000,size=1M
     volumes:
-      - .:/workspace
-      - ${HOME_DIR}/.aws:/home/powerpipe/.aws:ro
-      - ${HOME_DIR}/.steampipe:/home/powerpipe/.steampipe
-    ports:
-      - "${PORT:-9033}:${PORT:-9033}"
+      - ./powerpipe/results:/workspace/powerpipe/results
+      - ./tailpipe:/workspace/tailpipe:ro
+      - ${HOST_HOME:?HOST_HOME must be set}/.aws:/host-aws:ro
+      - tailpipe_state:/home/powerpipe/.tailpipe
     command:
-      - powerpipe
-      - server
-      - --port
-      - "${PORT:-9033}"
+      - bash
+      - /usr/local/bin/compose-tailpipe.sh
+
+volumes:
+  steampipe_state:
+  powerpipe_state:
+  tailpipe_state:

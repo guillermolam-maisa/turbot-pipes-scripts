@@ -30,19 +30,37 @@ run_bash_syntax() {
   fi
 }
 
-check_file "powerpipe/run-all-controls-safe.sh"
 check_file "Taskfile.yml"
 check_file "compose.yaml"
 check_file "Dockerfile"
-check_file "scripts/compose-runner.sh"
-check_file "scripts/vendor-local-binaries.sh"
 check_file "powerpipe/mod.pp"
-check_file "powerpipe/BENCHMARK_RUNBOOK.md"
+check_file "powerpipe/run-all-controls-safe.sh"
+check_file "scripts/compose-steampipe.sh"
+check_file "scripts/compose-powerpipe.sh"
+check_file "scripts/compose-benchmark-runner.sh"
+check_file "scripts/compose-tailpipe.sh"
+check_file "tailpipe/queries/cloudtrail_summary.sql"
+check_file "scripts/vendor-local-binaries.sh"
+check_file "scripts/select-port.sh"
+check_file "scripts/write-compose-env.sh"
+check_file "scripts/check-dependencies.sh"
+check_file "scripts/docker-compose.sh"
 
 run_bash_syntax "powerpipe/run-all-controls-safe.sh"
-run_bash_syntax "scripts/compose-runner.sh"
+run_bash_syntax "scripts/compose-steampipe.sh"
+run_bash_syntax "scripts/compose-powerpipe.sh"
+run_bash_syntax "scripts/compose-benchmark-runner.sh"
+run_bash_syntax "scripts/compose-tailpipe.sh"
 run_bash_syntax "scripts/vendor-local-binaries.sh"
+run_bash_syntax "scripts/select-port.sh"
+run_bash_syntax "scripts/write-compose-env.sh"
+run_bash_syntax "scripts/check-dependencies.sh"
+run_bash_syntax "scripts/docker-compose.sh"
 run_bash_syntax "scripts/validate-workspace.sh"
+
+if ! bash "${WORKDIR}/scripts/check-dependencies.sh" --profile common; then
+  FAILED=1
+fi
 
 check_cmd docker
 check_cmd task
@@ -50,7 +68,9 @@ check_cmd steampipe
 check_cmd powerpipe
 
 if command -v docker >/dev/null 2>&1; then
-  if ! docker compose -f "${WORKDIR}/compose.yaml" config >/dev/null; then
+  if ! bash "${WORKDIR}/scripts/write-compose-env.sh" >/dev/null; then
+    FAILED=1
+  elif ! bash "${WORKDIR}/scripts/docker-compose.sh" --env-file /tmp/turbot-runtime/compose.env -f "${WORKDIR}/compose.yaml" config >/dev/null; then
     FAILED=1
   fi
 else

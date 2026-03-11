@@ -5,6 +5,13 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
   return 1 2>/dev/null || exit 1
 fi
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET_SCRIPT="${ROOT_DIR}/powerpipe/run-all-controls-safe.sh"
+
+if [[ -x "${TARGET_SCRIPT}" ]]; then
+  exec bash "${TARGET_SCRIPT}" "$@"
+fi
+
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESULTS_DIR="${WORKDIR}/results"
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -38,35 +45,10 @@ need_cmd timeout
 need_cmd sed
 need_cmd tee
 
-select_powerpipe_port() {
-  PORT="$(bash "${WORKDIR}/../scripts/select-port.sh" --preferred "${PORT}")"
-}
-
-wait_for_port() {
-  local host="$1"
-  local port="$2"
-  local timeout_secs="$3"
-  local started_at
-  started_at="$(date +%s)"
-
-  while true; do
-    if bash -lc "exec 3<>/dev/tcp/${host}/${port}" >/dev/null 2>&1; then
-      return 0
-    fi
-
-    if (( $(date +%s) - started_at >= timeout_secs )); then
-      return 1
-    fi
-
-    sleep 1
-  done
-}
-
 mkdir -p "${RESULTS_DIR}" "${RUN_DIR}"
 cd "${WORKDIR}" || exit 1
 
 write_run_metadata() {
-  # Persist only the run contract, not the ambient shell environment.
   cat > "${RUN_DIR}/run.env" <<EOF
 WORKDIR=${WORKDIR}
 RUN_DIR=${RUN_DIR}
@@ -108,7 +90,7 @@ terminate_steampipe_clients() {
 }
 
 force_reset_steampipe_processes() {
-  pkill -9 -f "${HOME}/.steampipe/db/.*/postgres" >/dev/null 2>&1 || true
+  pkill -9 -f '/home/kali-user/.steampipe/db/.*/postgres' >/dev/null 2>&1 || true
   pkill -9 -f 'steampipe plugin-manager' >/dev/null 2>&1 || true
   pkill -9 -f 'steampipe-plugin-aws.plugin' >/dev/null 2>&1 || true
   sleep 2
@@ -231,14 +213,11 @@ ensure_powerpipe_server() {
 
   nohup powerpipe server --port "${PORT}" > "${RUN_DIR}/powerpipe-server.log" 2>&1 &
   POWERPIPE_PID="$!"
-  if ! wait_for_port "127.0.0.1" "${PORT}" "${POWERPIPE_SERVER_WAIT}"; then
-    log "ERROR: powerpipe server did not start on port ${PORT}."
-    exit 1
-  fi
+  sleep "${POWERPIPE_SERVER_WAIT}"
 
   pid="$(port_owner_pid)"
   if [[ -z "${pid}" ]]; then
-    log "ERROR: powerpipe server did not expose a listener on port ${PORT}."
+    log "ERROR: powerpipe server did not start on port ${PORT}."
     exit 1
   fi
 }
@@ -324,7 +303,6 @@ EOF
 log "[1/8] Cleaning up stale Powerpipe processes..."
 pkill -f "powerpipe benchmark run" >/dev/null 2>&1 || true
 pkill -f "powerpipe server" >/dev/null 2>&1 || true
-select_powerpipe_port
 
 write_run_metadata
 restart_steampipe_cleanly
