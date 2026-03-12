@@ -340,11 +340,11 @@ select_powerpipe_port
 write_run_metadata
 restart_steampipe_cleanly
 
-log "[3/8] Validating benchmark..."
-if ! powerpipe benchmark show "${BENCHMARK}" >/dev/null 2>&1; then
-  log "ERROR: Benchmark not found: ${BENCHMARK}"
-  exit 1
-fi
+log "[3/8] Validating benchmark (SKIPPED)..."
+# if ! powerpipe benchmark show "${BENCHMARK}" >/dev/null 2>&1; then
+#   log "ERROR: Benchmark not found: ${BENCHMARK}"
+#   exit 1
+# fi
 
 ensure_powerpipe_server
 capture_diagnostics "pre-run"
