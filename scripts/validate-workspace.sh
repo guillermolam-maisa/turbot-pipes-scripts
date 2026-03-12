@@ -6,6 +6,9 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
 fi
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=./lib-path.sh
+source "${WORKDIR}/scripts/lib-path.sh"
+prepend_vendor_bin "${WORKDIR}"
 FAILED=0
 
 check_file() {
@@ -45,6 +48,10 @@ check_file "scripts/select-port.sh"
 check_file "scripts/write-compose-env.sh"
 check_file "scripts/check-dependencies.sh"
 check_file "scripts/docker-compose.sh"
+check_file "scripts/install-host-deps.sh"
+check_file "scripts/bootstrap-workspace.sh"
+check_file "scripts/doctor.sh"
+check_file "scripts/lib-path.sh"
 
 run_bash_syntax "powerpipe/run-all-controls-safe.sh"
 run_bash_syntax "scripts/compose-steampipe.sh"
@@ -57,6 +64,10 @@ run_bash_syntax "scripts/write-compose-env.sh"
 run_bash_syntax "scripts/check-dependencies.sh"
 run_bash_syntax "scripts/docker-compose.sh"
 run_bash_syntax "scripts/validate-workspace.sh"
+run_bash_syntax "scripts/install-host-deps.sh"
+run_bash_syntax "scripts/bootstrap-workspace.sh"
+run_bash_syntax "scripts/doctor.sh"
+run_bash_syntax "scripts/lib-path.sh"
 
 if ! bash "${WORKDIR}/scripts/check-dependencies.sh" --profile common; then
   FAILED=1

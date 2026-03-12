@@ -1,0 +1,79 @@
+version: "3"
+
+tasks:
+  config:
+    desc: Validate the Docker Compose configuration.
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - bash ./scripts/cleanup-runtime.sh
+      - bash ./scripts/check-dependencies.sh --profile compose
+      - bash ./scripts/write-compose-env.sh >/dev/null
+      - bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env config >/dev/null
+
+  up:
+    desc: Start the Compose-managed Steampipe and Powerpipe services.
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - bash ./scripts/cleanup-runtime.sh
+      - bash ./scripts/check-dependencies.sh --profile compose
+      - bash ./scripts/write-compose-env.sh >/dev/null
+      - bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env up -d steampipe powerpipe
+
+  down:
+    desc: Stop the Compose-managed services.
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - bash ./scripts/cleanup-runtime.sh
+      - bash ./scripts/check-dependencies.sh --profile compose
+      - sh -c 'if [ -f /tmp/turbot-runtime/compose.env ]; then bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env down; else bash ./scripts/docker-compose.sh down; fi'
+
+  logs:
+    desc: Tail the Compose-managed service logs.
+    preconditions:
+      - sh: command -v docker >/dev/null 2>&1
+        msg: docker is required for compose targets.
+    cmds:
+      - bash ./scripts/check-dependencies.sh --profile compose
+      - sh -c 'if [ -f /tmp/turbot-runtime/compose.env ]; then bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env logs -f steampipe powerpipe; else bash ./scripts/docker-compose.sh logs -f steampipe powerpipe; fi'
+
+  run:smoke:
+    desc: Run the narrow smoke benchmark with Compose-managed services.
+    cmds:
+      - task: up
+      - bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env --profile runner run -T --rm -e SEARCH_PATH=admin_only -e BENCHMARK=aws_compliance.benchmark.all_controls_account -e BENCHMARK_ACCEPT_FINDINGS=true runner
+
+  run:admin:
+    desc: Run the full admin_only benchmark with Compose-managed services.
+    cmds:
+      - task: up
+      - bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env --profile runner run -T --rm -e SEARCH_PATH=admin_only runner
+
+  run:all:
+    desc: Run the full all-connections benchmark with Compose-managed services.
+    cmds:
+      - task: up
+      - bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env --profile runner run -T --rm -e SEARCH_PATH=aws_all runner
+
+  tailpipe:
+    desc: Start the optional Tailpipe CloudTrail collection toolbox profile.
+    cmds:
+      - bash ./scripts/cleanup-runtime.sh
+      - bash ./scripts/check-dependencies.sh --profile compose
+      - bash ./scripts/write-compose-env.sh >/dev/null
+      - bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env --profile tailpipe up -d tailpipe
+
+  tailpipe:smoke:
+    desc: Run Tailpipe collect/query against CloudTrail using AWS profiles from ~/.aws/config.
+    cmds:
+      - bash ./scripts/cleanup-runtime.sh
+      - bash ./scripts/check-dependencies.sh --profile compose
+      - bash ./scripts/check-dependencies.sh --profile tailpipe
+      - env PROFILE_SELECTOR=admin_only DISCOVERY_ROOT=powerpipe/results/discovery bash ./scripts/discover-tailpipe-sources.sh
+      - bash ./scripts/write-compose-env.sh >/dev/null
+      - bash ./scripts/docker-compose.sh --env-file /tmp/turbot-runtime/compose.env --profile tailpipe run -T --rm -e TAILPIPE_MODE=smoke tailpipe

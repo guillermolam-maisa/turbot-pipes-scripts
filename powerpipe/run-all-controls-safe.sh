@@ -6,6 +6,9 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
 fi
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../scripts/lib-path.sh
+source "${WORKDIR}/../scripts/lib-path.sh"
+prepend_vendor_bin "${WORKDIR}/.."
 RESULTS_DIR="${WORKDIR}/results"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 RUN_DIR="${RESULTS_DIR}/${STAMP}"
@@ -14,10 +17,18 @@ PORT="${PORT:-9033}"
 
 SEARCH_PATH="${SEARCH_PATH:-admin_only}"
 BENCHMARK="${BENCHMARK:-aws_compliance.benchmark.all_controls}"
-MAX_PARALLEL="${MAX_PARALLEL:-1}"
+MAX_PARALLEL="${MAX_PARALLEL:-0}"
 QUERY_TIMEOUT="${QUERY_TIMEOUT:-90}"
-BENCHMARK_TIMEOUT="${BENCHMARK_TIMEOUT:-2700}"
+BENCHMARK_TIMEOUT="${BENCHMARK_TIMEOUT:-0}"
 SERVICE_TIMEOUT="${SERVICE_TIMEOUT:-30}"
+
+if [[ "${MAX_PARALLEL}" -eq 0 ]]; then
+  if command -v nproc >/dev/null 2>&1; then
+    MAX_PARALLEL="$(nproc)"
+  else
+    MAX_PARALLEL=2
+  fi
+fi
 POWERPIPE_SERVER_WAIT="${POWERPIPE_SERVER_WAIT:-5}"
 STEAMPIPE_READY_TIMEOUT="${STEAMPIPE_READY_TIMEOUT:-60}"
 

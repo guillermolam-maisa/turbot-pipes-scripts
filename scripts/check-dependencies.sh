@@ -6,6 +6,10 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
 fi
 
 PROFILE="${PROFILE:-all}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=./lib-path.sh
+source "${ROOT_DIR}/scripts/lib-path.sh"
+prepend_vendor_bin "${ROOT_DIR}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

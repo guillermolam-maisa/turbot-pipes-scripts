@@ -55,9 +55,13 @@ RUN chmod 0555 /usr/local/bin/compose-*.sh
 USER powerpipe
 WORKDIR /workspace
 
-# Pre-install plugins into the image to eliminate runtime network dependencies
+# Pre-install plugins and mods into the image to eliminate runtime network dependencies
 RUN steampipe plugin install aws && \
-    tailpipe plugin install aws
+    tailpipe plugin install aws && \
+    tailpipe mod install github.com/turbot/tailpipe-mod-aws-cloudtrail-log-detections && \
+    tailpipe mod install github.com/turbot/tailpipe-mod-aws-vpc-flow-log-detections && \
+    tailpipe mod install github.com/turbot/tailpipe-mod-aws-s3-server-access-log-detections && \
+    tailpipe mod install github.com/turbot/tailpipe-mod-aws-cost-usage-report-insights
 
 # Force the container to run as the non-root user
 USER powerpipe

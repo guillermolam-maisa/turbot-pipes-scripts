@@ -24,10 +24,14 @@ This repository now includes a production-oriented AWS compliance benchmark runn
 
 Primary entrypoints:
 
+- `bash ./scripts/bootstrap-workspace.sh`
+- `bash ./scripts/doctor.sh`
 - `cd ./powerpipe && powerpipe mod install`
 - `bash ./scripts/validate-workspace.sh`
 - `bash ./scripts/vendor-local-binaries.sh`
 - `bash ./powerpipe/run-all-controls-safe.sh`
+- `task bootstrap`
+- `task doctor`
 - `task benchmark:smoke`
 - `task benchmark:admin`
 - `task benchmark:all`

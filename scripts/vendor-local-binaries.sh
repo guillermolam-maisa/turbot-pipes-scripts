@@ -6,6 +6,9 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
 fi
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=./lib-path.sh
+source "${WORKDIR}/scripts/lib-path.sh"
+prepend_vendor_bin "${WORKDIR}"
 VENDOR_DIR="${WORKDIR}/vendor/bin"
 STEAMPIPE_PLUGIN_SOURCE_ROOT="${HOME}/.steampipe/plugins"
 STEAMPIPE_PLUGIN_VENDOR_ROOT="${WORKDIR}/vendor/steampipe-plugins"

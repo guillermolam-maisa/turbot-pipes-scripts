@@ -1,0 +1,36 @@
+version: "3"
+
+tasks:
+  smoke:
+    desc: Run the narrow admin_only smoke benchmark with the safe wrapper (Host-side).
+    env:
+      SEARCH_PATH: admin_only
+      BENCHMARK: aws_compliance.benchmark.all_controls_account
+      MAX_PARALLEL: "{{.MAX_PARALLEL}}"
+      QUERY_TIMEOUT: "{{.QUERY_TIMEOUT}}"
+      BENCHMARK_TIMEOUT: "{{.BENCHMARK_TIMEOUT}}"
+    cmds:
+      - bash ./scripts/check-dependencies.sh --profile host
+      - bash ./powerpipe/run-all-controls-safe.sh
+
+  admin:
+    desc: Run the full admin_only benchmark with the safe wrapper (Host-side).
+    env:
+      SEARCH_PATH: admin_only
+      MAX_PARALLEL: "{{.MAX_PARALLEL}}"
+      QUERY_TIMEOUT: "{{.QUERY_TIMEOUT}}"
+      BENCHMARK_TIMEOUT: "{{.BENCHMARK_TIMEOUT}}"
+    cmds:
+      - bash ./scripts/check-dependencies.sh --profile host
+      - bash ./powerpipe/run-all-controls-safe.sh
+
+  all:
+    desc: Run the full all-connections benchmark with the safe wrapper (Host-side).
+    env:
+      SEARCH_PATH: all
+      MAX_PARALLEL: "{{.MAX_PARALLEL}}"
+      QUERY_TIMEOUT: "{{.QUERY_TIMEOUT}}"
+      BENCHMARK_TIMEOUT: "{{.BENCHMARK_TIMEOUT}}"
+    cmds:
+      - bash ./scripts/check-dependencies.sh --profile host
+      - bash ./powerpipe/run-all-controls-safe.sh
