@@ -22,3 +22,4 @@ vendor/bin/*.manifest
 powerpipe/results/*
 !powerpipe/results/.gitkeep
 powerpipe/.mod.cache.json
+vendor/
