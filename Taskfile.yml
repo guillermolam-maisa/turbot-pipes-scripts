@@ -1,9 +1,9 @@
 version: "3"
 
 vars:
-  MAX_PARALLEL: '{{default "0" .MAX_PARALLEL}}'
+  MAX_PARALLEL: '{{default "1" .MAX_PARALLEL}}'
   QUERY_TIMEOUT: '{{default "90" .QUERY_TIMEOUT}}'
-  BENCHMARK_TIMEOUT: '{{default "0" .BENCHMARK_TIMEOUT}}'
+  BENCHMARK_TIMEOUT: '{{default "2700" .BENCHMARK_TIMEOUT}}'
 
 includes:
   benchmark: tasks/benchmark.yml
@@ -43,6 +43,23 @@ tasks:
     cmds:
       - bash ./scripts/check-dependencies.sh --profile common
       - bash ./scripts/validate-workspace.sh
+
+  python:format:
+    desc: Format the Python package with Black via Poetry.
+    cmds:
+      - poetry run black src tests
+
+  python:lint:
+    desc: Lint the Python package with Ruff via Poetry.
+    cmds:
+      - poetry run ruff check src tests
+
+  python:check:
+    desc: Run Black, Ruff, and pytest via Poetry.
+    cmds:
+      - poetry run black --check src tests
+      - poetry run ruff check src tests
+      - poetry run pytest -q tests
 
   checksums:generate:
     desc: Regenerate the pinned SHA256 checksums for all tool binaries.

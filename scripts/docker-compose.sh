@@ -5,57 +5,15 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
   return 1 2>/dev/null || exit 1
 fi
 
-if ! command -v docker >/dev/null 2>&1; then
-  echo "ERROR: docker is not installed" >&2
-  exit 1
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PYTHON_SRC="${REPO_ROOT}/src"
+
+if [[ ! -d "${PYTHON_SRC}" && -d /opt/turbot-ops/src ]]; then
+  PYTHON_SRC="/opt/turbot-ops/src"
 fi
 
-DOCKER_COMPOSE_USE_SUDO="${DOCKER_COMPOSE_USE_SUDO:-auto}"
-subcommand=""
-for arg in "$@"; do
-  case "${arg}" in
-    -f|--file|--env-file|--profile|--project-name)
-      skip_next=1
-      ;;
-    *)
-      if [[ "${skip_next:-0}" -eq 1 ]]; then
-        skip_next=0
-        continue
-      fi
-      if [[ "${arg}" != -* ]]; then
-        subcommand="${arg}"
-        break
-      fi
-      ;;
-  esac
-done
-
-case "${subcommand}" in
-  config|version)
-    exec docker compose "$@"
-    ;;
-esac
-
-if [[ "${DOCKER_COMPOSE_USE_SUDO}" == "never" ]]; then
-  exec docker compose "$@"
-fi
-
-if docker ps >/dev/null 2>&1; then
-  exec docker compose "$@"
-fi
-
-if [[ "${DOCKER_COMPOSE_USE_SUDO}" == "always" ]] && command -v sudo >/dev/null 2>&1; then
-  exec sudo docker compose "$@"
-fi
-
-if [[ "${DOCKER_COMPOSE_USE_SUDO}" == "auto" ]] && command -v sudo >/dev/null 2>&1 && sudo -n docker ps >/dev/null 2>&1; then
-  exec sudo docker compose "$@"
-fi
-
-if [[ "${DOCKER_COMPOSE_USE_SUDO}" == "auto" ]] && command -v sudo >/dev/null 2>&1 && [[ -t 0 && -t 1 ]]; then
-  exec sudo docker compose "$@"
-fi
-
-echo "ERROR: docker daemon requires elevated privileges for this user." >&2
-echo "Set DOCKER_COMPOSE_USE_SUDO=always to force sudo, or DOCKER_COMPOSE_USE_SUDO=never to disable it." >&2
-exit 1
+export PYTHONPATH="${PYTHON_SRC}${PYTHONPATH:+:${PYTHONPATH}}"
+exec python3 -m turbot_ops.cli docker-compose "$@"

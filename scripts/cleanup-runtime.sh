@@ -5,11 +5,15 @@ if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
   return 1 2>/dev/null || exit 1
 fi
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+set -euo pipefail
 
-pkill -f "powerpipe benchmark run" >/dev/null 2>&1 || true
-pkill -f "powerpipe server" >/dev/null 2>&1 || true
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PYTHON_SRC="${REPO_ROOT}/src"
 
-if command -v docker >/dev/null 2>&1; then
-  bash "${ROOT_DIR}/scripts/docker-compose.sh" -f "${ROOT_DIR}/compose.yaml" down --remove-orphans >/dev/null 2>&1 || true
+if [[ ! -d "${PYTHON_SRC}" && -d /opt/turbot-ops/src ]]; then
+  PYTHON_SRC="/opt/turbot-ops/src"
 fi
+
+export PYTHONPATH="${PYTHON_SRC}${PYTHONPATH:+:${PYTHONPATH}}"
+exec python3 -m turbot_ops.cli cleanup-runtime

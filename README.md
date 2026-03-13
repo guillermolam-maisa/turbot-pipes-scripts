@@ -20,6 +20,10 @@ Add assets under the relevant service directory and document any repository-spec
 
 ## Benchmark Operations
 
+Host bootstrap automation in this repository currently targets Linux `x86_64/amd64`. Other platforms require manual installation of the host prerequisites before using the repo workflows.
+
+Core orchestration is now implemented as a Python 3.13 project under `src/turbot_ops` with Poetry metadata in [`pyproject.toml`](/home/kali-user/turbot/pyproject.toml). The legacy shell entrypoints remain in place as thin compatibility wrappers for existing task and Compose interfaces.
+
 This repository now includes a production-oriented AWS compliance benchmark runner under [powerpipe/run-all-controls-safe.sh](/home/kali-user/turbot/powerpipe/run-all-controls-safe.sh). The runner is designed to be idempotent, safe to invoke with `bash`, and aligned with the local process-hygiene requirements used for Powerpipe and Steampipe.
 
 Primary entrypoints:

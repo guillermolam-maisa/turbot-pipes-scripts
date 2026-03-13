@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "turbot-ops"
+version = "0.1.0"
+description = "Operational orchestration for Turbot benchmark workflows"
+authors = ["Codex <codex@openai.com>"]
+packages = [{ include = "turbot_ops", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+black = "^25.1.0"
+ruff = "^0.11.0"
+
+[tool.poetry.scripts]
+turbot-ops = "turbot_ops.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ["py313"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"

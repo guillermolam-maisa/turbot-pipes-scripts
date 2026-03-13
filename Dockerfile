@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     awscli \
     bash \
     ca-certificates \
+    python3 \
     postgresql-client \
     procps \
     lsof \
@@ -50,6 +51,8 @@ COPY --chown=root:root scripts/compose-steampipe.sh /usr/local/bin/
 COPY --chown=root:root scripts/compose-powerpipe.sh /usr/local/bin/
 COPY --chown=root:root scripts/compose-benchmark-runner.sh /usr/local/bin/
 COPY --chown=root:root scripts/compose-tailpipe.sh /usr/local/bin/
+COPY --chown=root:root pyproject.toml /opt/turbot-ops/pyproject.toml
+COPY --chown=root:root src /opt/turbot-ops/src
 RUN chmod 0555 /usr/local/bin/compose-*.sh
 
 USER powerpipe
