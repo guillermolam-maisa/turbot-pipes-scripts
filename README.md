@@ -1,4 +1,6 @@
+![Turbot Logo](https://download.logo.wine/logo/Turbot_(business)/Turbot_(business)-Logo.wine.png)
 # Turbot Pipes Scripts
+
 
 Private repository for Turbot Pipes-related scripts, queries, dashboards, benchmarks, workflows, detections, and supporting documentation.
 
